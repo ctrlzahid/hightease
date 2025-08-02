@@ -8,6 +8,9 @@ interface Creator {
   slug: string;
   bio?: string;
   avatar?: string;
+  age?: number;
+  gender?: string;
+  location?: string;
 }
 
 interface CreatorHeaderProps {

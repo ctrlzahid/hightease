@@ -32,7 +32,7 @@ async function getCreatorsWithStats() {
       age: creatorObj.age ? Number(creatorObj.age) : null,
       gender: creatorObj.gender ? String(creatorObj.gender) : null,
       location: String(creatorObj.location || ''),
-      avatar: creatorObj.avatar ? String(creatorObj.avatar) : null,
+      avatar: creatorObj.avatar ? String(creatorObj.avatar) : undefined,
       avatarPublicId: creatorObj.avatarPublicId
         ? String(creatorObj.avatarPublicId)
         : null,
