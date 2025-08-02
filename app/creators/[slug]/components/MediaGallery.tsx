@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import CustomGallery from './CustomGallery';
 
 interface MediaItem {
@@ -76,7 +76,7 @@ export default function MediaGallery({
 
   const renderVideoEmbed = (item: MediaItem) => {
     return (
-      <div className='relative'>
+      <div className='relative aspect-video'>
         {item.uploadType === 'youtube' && item.externalId ? (
           <iframe
             src={`https://www.youtube.com/embed/${item.externalId}`}
@@ -135,19 +135,19 @@ export default function MediaGallery({
 
   return (
     <>
-      {/* Grid Layout */}
-      <div className='grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4'>
+      {/* Masonry Layout */}
+      <div className='columns-1 sm:columns-2 lg:columns-3 gap-4 space-y-4'>
         {media.map((item, index) => (
           <div
             key={item._id}
-            className='aspect-square bg-gray-900 rounded-lg overflow-hidden cursor-pointer hover:scale-105 transition-transform'
+            className='break-inside-avoid mb-4 bg-gray-900 rounded-lg overflow-hidden cursor-pointer hover:scale-105 transition-transform'
             onClick={() => handleImageClick(index)}
           >
             {item.type === 'image' ? (
               <img
                 src={item.url}
                 alt={item.caption || 'Creator content'}
-                className='w-full h-full object-cover'
+                className='w-full object-cover'
                 loading='lazy'
               />
             ) : /* Show custom thumbnail for videos if available, otherwise embed */
@@ -156,7 +156,7 @@ export default function MediaGallery({
                 <img
                   src={item.customThumbnail}
                   alt={item.caption || 'Video thumbnail'}
-                  className='w-full h-full object-cover'
+                  className='w-full object-cover'
                 />
                 <div className='absolute inset-0 video-overlay flex items-center justify-center'>
                   <div className='w-12 h-12 bg-white bg-opacity-80 rounded-full flex items-center justify-center'>

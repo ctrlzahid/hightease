@@ -104,7 +104,37 @@ export async function DELETE(
 
     // Delete all media from Cloudinary
     const media = await Media.find({ creatorId: creator._id });
-    await Promise.all(media.map((item) => deleteMedia(item.publicId)));
+    const cloudinaryDeletions = [];
+
+    // Collect all Cloudinary assets to delete
+    media.forEach((item) => {
+      // Delete main media file if it's a cloudinary upload
+      if (item.uploadType === 'cloudinary' && item.publicId) {
+        cloudinaryDeletions.push(deleteMedia(item.publicId));
+      }
+      // Delete custom thumbnail if it exists
+      if (item.customThumbnailPublicId) {
+        cloudinaryDeletions.push(deleteMedia(item.customThumbnailPublicId));
+      }
+    });
+
+    // Delete creator's avatar if it exists
+    if (creator.avatarPublicId) {
+      cloudinaryDeletions.push(deleteMedia(creator.avatarPublicId));
+    }
+
+    // Execute all Cloudinary deletions
+    if (cloudinaryDeletions.length > 0) {
+      try {
+        await Promise.all(cloudinaryDeletions);
+        console.log(
+          `Successfully deleted ${cloudinaryDeletions.length} files from Cloudinary for creator: ${creator.name}`
+        );
+      } catch (cloudinaryError) {
+        console.error('Error deleting from Cloudinary:', cloudinaryError);
+        // Continue with database deletion even if Cloudinary fails
+      }
+    }
 
     // Delete all related records
     await Promise.all([

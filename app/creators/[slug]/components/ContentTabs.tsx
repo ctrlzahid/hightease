@@ -53,15 +53,15 @@ export default function ContentTabs({ media }: ContentTabsProps) {
   }) => (
     <button
       onClick={() => setActiveTab(tab)}
-      className={`flex items-center space-x-2 px-4 py-2 border-b-2 transition-colors ${
+      className={`flex items-center space-x-1.5 px-3 py-1.5 border-b-2 transition-colors ${
         activeTab === tab
           ? 'border-white text-white'
           : 'border-transparent text-gray-400 hover:text-gray-200'
       }`}
     >
       {icon}
-      <span className='font-medium'>{label}</span>
-      <span className='bg-gray-700 text-gray-300 text-xs px-2 py-1 rounded-full'>
+      <span className='text-sm font-medium'>{label}</span>
+      <span className='bg-gray-700 text-gray-300 text-xs px-1.5 py-0.5 rounded-full min-w-[20px] text-center'>
         {count}
       </span>
     </button>
@@ -70,14 +70,14 @@ export default function ContentTabs({ media }: ContentTabsProps) {
   return (
     <div>
       {/* Tab Navigation */}
-      <div className='flex justify-center space-x-8 mb-8 border-b border-gray-800'>
+      <div className='flex justify-center space-x-6 mb-6 border-b border-gray-800'>
         <TabButton
           tab='all'
           label='All'
           count={media.length}
           icon={
             <svg
-              className='w-5 h-5'
+              className='w-4 h-4'
               fill='none'
               stroke='currentColor'
               viewBox='0 0 24 24'
@@ -97,7 +97,7 @@ export default function ContentTabs({ media }: ContentTabsProps) {
           count={imageCount}
           icon={
             <svg
-              className='w-5 h-5'
+              className='w-4 h-4'
               fill='none'
               stroke='currentColor'
               viewBox='0 0 24 24'
@@ -117,7 +117,7 @@ export default function ContentTabs({ media }: ContentTabsProps) {
           count={videoCount}
           icon={
             <svg
-              className='w-5 h-5'
+              className='w-4 h-4'
               fill='none'
               stroke='currentColor'
               viewBox='0 0 24 24'

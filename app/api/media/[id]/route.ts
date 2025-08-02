@@ -23,10 +23,27 @@ export async function DELETE(
       return NextResponse.json({ error: 'Media not found' }, { status: 404 });
     }
 
-    // Delete from Cloudinary only if it's a cloudinary upload
+    // Delete from Cloudinary - handle both main media and custom thumbnail
+    const cloudinaryDeletions = [];
+
+    // Delete main media file if it's a cloudinary upload
     if (media.uploadType === 'cloudinary' && media.publicId) {
+      cloudinaryDeletions.push(deleteMedia(media.publicId));
+    }
+
+    // Delete custom thumbnail if it exists
+    if (media.customThumbnailPublicId) {
+      cloudinaryDeletions.push(deleteMedia(media.customThumbnailPublicId));
+    }
+
+    // Execute all Cloudinary deletions
+    if (cloudinaryDeletions.length > 0) {
       try {
-        await deleteMedia(media.publicId);
+        await Promise.all(cloudinaryDeletions);
+        console.log('Successfully deleted media from Cloudinary:', {
+          mainFile: media.publicId || 'none',
+          customThumbnail: media.customThumbnailPublicId || 'none',
+        });
       } catch (cloudinaryError) {
         console.error('Error deleting from Cloudinary:', cloudinaryError);
         // Continue with database deletion even if Cloudinary fails
