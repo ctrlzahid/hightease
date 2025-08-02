@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import { getOptimizedImageUrl } from '@/utils/cloudinary';
 
 interface Creator {
   _id: string;
@@ -74,7 +75,7 @@ export default function CreatorHeader({
         <div className='w-24 h-24 sm:w-28 sm:h-28 md:w-32 md:h-32 rounded-full overflow-hidden bg-gray-700 flex items-center justify-center'>
           {creator.avatar && !avatarError ? (
             <img
-              src={creator.avatar}
+              src={getOptimizedImageUrl(creator.avatar, 'avatar')}
               alt={creator.name}
               className='w-full h-full object-cover'
               onError={() => setAvatarError(true)}

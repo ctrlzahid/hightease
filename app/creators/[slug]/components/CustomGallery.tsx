@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect } from 'react';
+import { getOptimizedImageUrl } from '@/utils/cloudinary';
 
 interface MediaItem {
   _id: string;
@@ -63,8 +64,7 @@ export default function CustomGallery({
   const getVideoThumbnailUrl = (item: MediaItem) => {
     // Prefer custom thumbnail if available
     if (item.hasCustomThumbnail && item.customThumbnail) {
-      console.log(item.customThumbnail, item.customThumbnailPublicId);
-      return item.customThumbnail;
+      return getOptimizedImageUrl(item.customThumbnail, 'full');
     }
 
     let thumbnailUrl = item.thumbnail;
@@ -92,7 +92,7 @@ export default function CustomGallery({
     if (currentItem.type === 'image') {
       return (
         <img
-          src={currentItem.url}
+          src={getOptimizedImageUrl(currentItem.url, 'full')}
           alt={currentItem.caption || 'Image'}
           className='max-w-full max-h-[80vh] object-contain mx-auto'
         />
@@ -207,7 +207,10 @@ export default function CustomGallery({
             >
               {item.type === 'image' ? (
                 <img
-                  src={item.thumbnail || item.url}
+                  src={getOptimizedImageUrl(
+                    item.thumbnail || item.url,
+                    'thumbnail'
+                  )}
                   alt={`Thumbnail ${index + 1}`}
                   className='w-full h-full object-cover'
                 />

@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useRef } from 'react';
 import CustomGallery from './CustomGallery';
+import { getOptimizedImageUrl } from '@/utils/cloudinary';
 
 interface MediaItem {
   _id: string;
@@ -145,7 +146,7 @@ export default function MediaGallery({
           >
             {item.type === 'image' ? (
               <img
-                src={item.url}
+                src={getOptimizedImageUrl(item.url, 'preview')}
                 alt={item.caption || 'Creator content'}
                 className='w-full object-cover'
                 loading='lazy'
@@ -154,7 +155,7 @@ export default function MediaGallery({
             item.hasCustomThumbnail && item.customThumbnail ? (
               <div className='relative'>
                 <img
-                  src={item.customThumbnail}
+                  src={getOptimizedImageUrl(item.customThumbnail, 'thumbnail')}
                   alt={item.caption || 'Video thumbnail'}
                   className='w-full object-cover'
                 />
