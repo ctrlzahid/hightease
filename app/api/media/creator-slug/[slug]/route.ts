@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { Types } from 'mongoose';
 import { Media } from '@/models/media';
+import { Creator } from '@/models/creator';
 import { checkAccess } from '@/utils/auth';
 import connectDB from '@/lib/db';
 
@@ -8,27 +9,33 @@ const ITEMS_PER_PAGE = 20;
 
 export async function GET(
   request: NextRequest,
-  { params }: { params: Promise<{ creatorId: string }> }
+  { params }: { params: Promise<{ slug: string }> }
 ) {
   try {
-    const { creatorId } = await params;
+    const { slug } = await params;
     await connectDB();
 
     const { searchParams } = new URL(request.url);
     const cursor = searchParams.get('cursor');
 
+    // Find creator by slug first
+    const creator = await Creator.findOne({ slug });
+    if (!creator) {
+      return NextResponse.json({ error: 'Creator not found' }, { status: 404 });
+    }
+
     // Verify access - check both admin access and regular user access
     const adminTokenFromCookie = request.cookies.get('adminToken')?.value;
     const isAdmin =
       adminTokenFromCookie === process.env.NEXT_PUBLIC_ADMIN_TOKEN;
-    const hasCreatorAccess = await checkAccess(creatorId);
+    const hasCreatorAccess = await checkAccess(creator._id.toString());
 
     if (!isAdmin && !hasCreatorAccess) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
     // Build query
-    const query: any = { creatorId: new Types.ObjectId(creatorId) };
+    const query: any = { creatorId: new Types.ObjectId(creator._id) };
     if (cursor) {
       query._id = { $lt: new Types.ObjectId(cursor) };
     }

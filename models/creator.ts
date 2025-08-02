@@ -6,6 +6,9 @@ interface ICreator extends Document {
   bio: string;
   avatar?: string;
   avatarPublicId?: string;
+  age?: number;
+  gender?: 'male' | 'female' | 'other';
+  location?: string;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -34,6 +37,20 @@ const creatorSchema = new Schema<ICreator>(
       trim: true,
     },
     avatarPublicId: {
+      type: String,
+      trim: true,
+    },
+    age: {
+      type: Number,
+      min: [13, 'Age must be at least 13'],
+      max: [120, 'Age must be less than 120'],
+    },
+    gender: {
+      type: String,
+      enum: ['male', 'female', 'other'],
+      lowercase: true,
+    },
+    location: {
       type: String,
       trim: true,
     },

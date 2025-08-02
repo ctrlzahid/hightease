@@ -136,11 +136,11 @@ export default function MediaGallery({
   return (
     <>
       {/* Masonry Layout */}
-      <div className='columns-1 sm:columns-2 lg:columns-3 gap-4 space-y-4'>
+      <div className='columns-2 sm:columns-2 md:columns-3 lg:columns-3 gap-2 sm:gap-3 md:gap-4'>
         {media.map((item, index) => (
           <div
             key={item._id}
-            className='break-inside-avoid mb-4 bg-gray-900 rounded-lg overflow-hidden cursor-pointer hover:scale-105 transition-transform'
+            className='break-inside-avoid mb-2 sm:mb-3 md:mb-4 bg-gray-900 rounded-lg overflow-hidden cursor-pointer hover:scale-105 transition-transform'
             onClick={() => handleImageClick(index)}
           >
             {item.type === 'image' ? (
@@ -159,9 +159,9 @@ export default function MediaGallery({
                   className='w-full object-cover'
                 />
                 <div className='absolute inset-0 video-overlay flex items-center justify-center'>
-                  <div className='w-12 h-12 bg-white bg-opacity-80 rounded-full flex items-center justify-center'>
+                  <div className='w-8 h-8 sm:w-12 sm:h-12 bg-white bg-opacity-80 rounded-full flex items-center justify-center'>
                     <svg
-                      className='w-6 h-6 text-gray-800 ml-1'
+                      className='w-4 h-4 sm:w-6 sm:h-6 text-gray-800 ml-0.5 sm:ml-1'
                       fill='currentColor'
                       viewBox='0 0 24 24'
                     >
@@ -170,8 +170,8 @@ export default function MediaGallery({
                   </div>
                 </div>
                 {item.uploadType && item.uploadType !== 'cloudinary' && (
-                  <div className='absolute top-2 right-2'>
-                    <span className='bg-black bg-opacity-60 text-white text-xs px-2 py-1 rounded capitalize'>
+                  <div className='absolute top-1 right-1 sm:top-2 sm:right-2'>
+                    <span className='bg-black bg-opacity-60 text-white text-xs px-1.5 py-0.5 sm:px-2 sm:py-1 rounded capitalize'>
                       {item.uploadType}
                     </span>
                   </div>

@@ -4,9 +4,11 @@ import { Creator } from '@/models/creator';
 import { Media } from '@/models/media';
 import { checkAccess } from '@/utils/auth';
 import connectDB from '@/lib/db';
+import Header from '@/app/components/Header';
 import CreatorHeader from './components/CreatorHeader';
 import ContentTabs from './components/ContentTabs';
 import PasswordForm from './components/PasswordForm';
+import TokenValidator from './components/TokenValidator';
 
 interface CreatorPageProps {
   params: Promise<{
@@ -33,8 +35,12 @@ export async function generateMetadata({
   };
 }
 
-export default async function CreatorPage({ params }: CreatorPageProps) {
+export default async function CreatorPage({
+  params,
+  searchParams,
+}: CreatorPageProps & { searchParams: Promise<{ token?: string }> }) {
   const { slug } = await params;
+  const { token } = await searchParams;
   await connectDB();
   const creator = await Creator.findOne({ slug });
 
@@ -45,13 +51,33 @@ export default async function CreatorPage({ params }: CreatorPageProps) {
   // Check if user has access
   const hasAccess = await checkAccess(creator._id.toString());
 
+  // If token is provided but no access, show token validator
+  if (!hasAccess && token) {
+    return (
+      <div className='min-h-screen text-white'>
+        <Header />
+        <div className='container mx-auto px-2 sm:px-4 py-4 sm:py-8'>
+          <CreatorHeader creator={JSON.parse(JSON.stringify(creator))} />
+          <TokenValidator
+            creatorId={creator._id.toString()}
+            creatorSlug={creator.slug}
+            token={token}
+          />
+        </div>
+      </div>
+    );
+  }
+
   // If no access, show password form
   if (!hasAccess) {
     return (
-      <div className='container mx-auto px-4 py-8'>
-        <CreatorHeader creator={JSON.parse(JSON.stringify(creator))} />
-        <div className='max-w-md mx-auto'>
-          <PasswordForm creatorId={creator._id.toString()} />
+      <div className='min-h-screen text-white'>
+        <Header />
+        <div className='container mx-auto px-2 sm:px-4 py-4 sm:py-8'>
+          <CreatorHeader creator={JSON.parse(JSON.stringify(creator))} />
+          <div className='max-w-md mx-auto'>
+            <PasswordForm creatorId={creator._id.toString()} />
+          </div>
         </div>
       </div>
     );
@@ -63,9 +89,12 @@ export default async function CreatorPage({ params }: CreatorPageProps) {
   });
 
   return (
-    <div className='container mx-auto px-4 py-8'>
-      <CreatorHeader creator={JSON.parse(JSON.stringify(creator))} />
-      <ContentTabs media={JSON.parse(JSON.stringify(media))} />
+    <div className='min-h-screen text-white'>
+      <Header />
+      <div className='container mx-auto px-2 sm:px-4 py-4 sm:py-8'>
+        <CreatorHeader creator={JSON.parse(JSON.stringify(creator))} />
+        <ContentTabs media={JSON.parse(JSON.stringify(media))} />
+      </div>
     </div>
   );
 }

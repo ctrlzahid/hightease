@@ -65,10 +65,10 @@ export default function CreatorHeader({
   };
 
   return (
-    <div className='flex flex-col items-center text-center mb-8 pb-8 border-b border-gray-800'>
+    <div className='flex flex-col items-center text-center mb-2 sm:mb-3 md:mb-4 pb-2 sm:pb-3 md:pb-4 border-b border-gray-800'>
       {/* Avatar Section */}
       <div className='relative mb-4'>
-        <div className='w-32 h-32 rounded-full overflow-hidden bg-gray-700 flex items-center justify-center'>
+        <div className='w-24 h-24 sm:w-28 sm:h-28 md:w-32 md:h-32 rounded-full overflow-hidden bg-gray-700 flex items-center justify-center'>
           {creator.avatar && !avatarError ? (
             <img
               src={creator.avatar}
@@ -77,7 +77,7 @@ export default function CreatorHeader({
               onError={() => setAvatarError(true)}
             />
           ) : (
-            <span className='text-3xl font-bold text-gray-300'>
+            <span className='text-xl sm:text-2xl md:text-3xl font-bold text-gray-300'>
               {getInitials(creator.name)}
             </span>
           )}
@@ -126,9 +126,70 @@ export default function CreatorHeader({
       </div>
 
       {/* Creator Info */}
-      <h1 className='text-3xl font-bold mb-2'>{creator.name}</h1>
+      <h1 className='text-2xl sm:text-3xl font-bold mb-3'>{creator.name}</h1>
+
+      {/* Creator Details */}
+      {(creator.age || creator.gender || creator.location) && (
+        <div className='flex flex-wrap items-center gap-4 mb-3 text-sm text-gray-300'>
+          {creator.age && (
+            <div className='flex items-center gap-1.5'>
+              <svg className='w-4 h-4' fill='currentColor' viewBox='0 0 24 24'>
+                <path d='M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z' />
+              </svg>
+              <span>{creator.age} years old</span>
+            </div>
+          )}
+
+          {creator.gender && (
+            <div className='flex items-center gap-1.5'>
+              {creator.gender === 'male' ? (
+                <svg
+                  className='w-4 h-4 text-blue-400'
+                  fill='currentColor'
+                  viewBox='0 0 24 24'
+                >
+                  <path d='M9.5 11c1.93 0 3.5 1.57 3.5 3.5S11.43 18 9.5 18 6 16.43 6 14.5 7.57 11 9.5 11zm0-2C6.46 9 4 11.46 4 14.5S6.46 20 9.5 20s5.5-2.46 5.5-5.5c0-1.16-.36-2.23-.97-3.12L18 7.41V10h2V4h-6v2h2.59l-3.97 3.97C11.73 9.36 10.66 9 9.5 9z' />
+                </svg>
+              ) : creator.gender === 'female' ? (
+                <svg
+                  className='w-4 h-4 text-pink-400'
+                  fill='currentColor'
+                  viewBox='0 0 24 24'
+                >
+                  <path d='M12 2C8.69 2 6 4.69 6 8s2.69 6 6 6 6-2.69 6-6-2.69-6-6-6zm0 10c-2.21 0-4-1.79-4-4s1.79-4 4-4 4 1.79 4 4-1.79 4-4 4zm-1 2v2H9v2h2v2h2v-2h2v-2h-2v-2z' />
+                </svg>
+              ) : (
+                <svg
+                  className='w-4 h-4 text-purple-400'
+                  fill='currentColor'
+                  viewBox='0 0 24 24'
+                >
+                  <path d='M12 2C8.69 2 6 4.69 6 8s2.69 6 6 6 6-2.69 6-6-2.69-6-6-6zm0 10c-2.21 0-4-1.79-4-4s1.79-4 4-4 4 1.79 4 4-1.79 4-4 4z' />
+                </svg>
+              )}
+              <span className='capitalize'>{creator.gender}</span>
+            </div>
+          )}
+
+          {creator.location && (
+            <div className='flex items-center gap-1.5'>
+              <svg
+                className='w-4 h-4 text-red-400'
+                fill='currentColor'
+                viewBox='0 0 24 24'
+              >
+                <path d='M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z' />
+              </svg>
+              <span>{creator.location}</span>
+            </div>
+          )}
+        </div>
+      )}
+
       {creator.bio && (
-        <p className='text-gray-300 max-w-2xl leading-relaxed'>{creator.bio}</p>
+        <p className='text-gray-300 max-w-2xl leading-relaxed text-sm sm:text-base'>
+          {creator.bio}
+        </p>
       )}
     </div>
   );

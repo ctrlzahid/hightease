@@ -12,9 +12,12 @@
 }
 
 body {
-  background: var(--background);
+  background: linear-gradient(to bottom right, #000000, #0f172a);
   color: var(--foreground);
+  min-height: 100vh;
 }
+
+/* Removed admin-bg class - now using consistent dark theme for both admin and non-admin */
 
 /* Dark mode form styles */
 input,
@@ -50,8 +53,8 @@ th {
   background-color: var(--card-background) !important;
 }
 
-/* Card styles */
-.bg-white {
+/* Card styles - only apply dark background to specific elements, not buttons */
+.bg-white:not(button):not(a):not(label) {
   background-color: var(--card-background) !important;
 }
 
@@ -59,8 +62,9 @@ th {
   color: var(--foreground) !important;
 }
 
-.text-gray-700,
-.text-gray-800 {
+/* Only apply light text colors to elements that don't have light backgrounds (chips/badges) */
+.text-gray-700:not(.bg-gray-200):not(.bg-green-100):not(.bg-red-100),
+.text-gray-800:not(.bg-gray-200):not(.bg-green-100):not(.bg-red-100) {
   color: #e5e5e5 !important;
 }
 
@@ -113,4 +117,21 @@ th {
 
 .video-overlay:hover {
   background: rgba(0, 0, 0, 0.3);
+}
+
+/* Line clamp utilities */
+.line-clamp-2 {
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+/* Global button cursor */
+button {
+  cursor: pointer;
+}
+
+button:disabled {
+  cursor: not-allowed;
 }

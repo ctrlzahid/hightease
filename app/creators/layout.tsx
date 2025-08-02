@@ -14,7 +14,7 @@ export default function CreatorLayout({
   children: React.ReactNode;
 }) {
   return (
-    <div className={`min-h-screen bg-black text-white ${inter.className}`}>
+    <div className={`min-h-screen text-white ${inter.className}`}>
       {children}
     </div>
   );

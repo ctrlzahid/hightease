@@ -44,8 +44,26 @@ export default function PasswordForm({ creatorId }: PasswordFormProps) {
   };
 
   return (
-    <div className='max-w-md mx-auto bg-gray-900 rounded-lg p-6'>
-      <h2 className='text-xl font-semibold mb-4'>Enter Password</h2>
+    <div className='max-w-md mx-auto bg-gray-900/80 backdrop-blur-sm rounded-2xl shadow-2xl border border-gray-700 p-6'>
+      <div className='text-center mb-6'>
+        <div className='space-y-2 text-sm text-gray-300'>
+          <p>
+            🔥{' '}
+            <span className='text-purple-300 font-medium'>
+              Exclusive Content
+            </span>{' '}
+            awaits...
+          </p>
+          <p>💋 Private photos & videos</p>
+          <p>✨ Behind-the-scenes moments</p>
+          <p>
+            🎭{' '}
+            <span className='text-pink-300 font-medium'>Naughty surprises</span>{' '}
+            inside
+          </p>
+        </div>
+      </div>
+
       <form onSubmit={handleSubmit} className='space-y-4'>
         <div>
           <label
@@ -59,19 +77,22 @@ export default function PasswordForm({ creatorId }: PasswordFormProps) {
             id='password'
             value={password}
             onChange={(e) => setPassword(e.target.value)}
-            className='w-full px-4 py-2 bg-gray-800 border border-gray-700 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500'
+            className='w-full px-3 py-2 bg-gray-800/50 border border-gray-600 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent text-sm'
             placeholder='Enter your access password'
             required
           />
         </div>
-        {error && <p className='text-red-500 text-sm'>{error}</p>}
+        {error && (
+          <div className='bg-red-500/10 border border-red-500/20 rounded-lg p-3'>
+            <p className='text-red-400 text-sm text-center'>{error}</p>
+          </div>
+        )}
         <button
           type='submit'
           disabled={isLoading}
-          className={`w-full py-2 px-4 bg-blue-600 hover:bg-blue-700 rounded-md font-medium transition-colors
-            ${isLoading ? 'opacity-50 cursor-not-allowed' : ''}`}
+          className='w-full px-4 py-2 bg-white text-black rounded-lg font-medium hover:bg-gray-100 transition-colors disabled:opacity-50 disabled:cursor-not-allowed text-sm'
         >
-          {isLoading ? 'Validating...' : 'Access Content'}
+          {isLoading ? 'Validating...' : '🔥 Access Exclusive Content'}
         </button>
       </form>
     </div>

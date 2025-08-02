@@ -92,7 +92,7 @@ export default function CreatorContent({
   };
 
   return (
-    <div className='space-y-8'>
+    <div className='space-y-4 sm:space-y-6 md:space-y-8'>
       {media.map((item, index) => (
         <div
           key={item._id}
@@ -124,9 +124,9 @@ export default function CreatorContent({
                   />
                   {/* Play button overlay */}
                   <div className='absolute inset-0 video-overlay flex items-center justify-center'>
-                    <div className='w-16 h-16 bg-white bg-opacity-90 rounded-full flex items-center justify-center'>
+                    <div className='w-12 h-12 sm:w-16 sm:h-16 bg-white bg-opacity-90 rounded-full flex items-center justify-center'>
                       <svg
-                        className='w-8 h-8 text-gray-800 ml-1'
+                        className='w-6 h-6 sm:w-8 sm:h-8 text-gray-800 ml-0.5 sm:ml-1'
                         fill='currentColor'
                         viewBox='0 0 24 24'
                       >
@@ -167,9 +167,9 @@ export default function CreatorContent({
                   )}
                   {/* Click overlay for modal */}
                   <div className='absolute inset-0 video-overlay flex items-center justify-center'>
-                    <div className='w-16 h-16 bg-white bg-opacity-90 rounded-full flex items-center justify-center'>
+                    <div className='w-12 h-12 sm:w-16 sm:h-16 bg-white bg-opacity-90 rounded-full flex items-center justify-center'>
                       <svg
-                        className='w-8 h-8 text-gray-800 ml-1'
+                        className='w-6 h-6 sm:w-8 sm:h-8 text-gray-800 ml-0.5 sm:ml-1'
                         fill='currentColor'
                         viewBox='0 0 24 24'
                       >
@@ -180,8 +180,8 @@ export default function CreatorContent({
                 </div>
               )}
               {item.uploadType && item.uploadType !== 'cloudinary' && (
-                <div className='absolute top-2 right-2'>
-                  <span className='bg-black bg-opacity-60 text-white text-xs px-2 py-1 rounded capitalize'>
+                <div className='absolute top-1 right-1 sm:top-2 sm:right-2'>
+                  <span className='bg-black bg-opacity-60 text-white text-xs px-1.5 py-0.5 sm:px-2 sm:py-1 rounded capitalize'>
                     {item.uploadType}
                   </span>
                 </div>

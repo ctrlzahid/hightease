@@ -4,6 +4,43 @@ import { Media } from '@/models/media';
 import { deleteMedia } from '@/lib/cloudinary';
 import connectDB from '@/lib/db';
 
+export async function PUT(
+  request: NextRequest,
+  { params }: { params: Promise<{ id: string }> }
+) {
+  try {
+    const { id } = await params;
+    await connectDB();
+
+    // Validate ID format
+    if (!Types.ObjectId.isValid(id)) {
+      return NextResponse.json({ error: 'Invalid media ID' }, { status: 400 });
+    }
+
+    const body = await request.json();
+    const { caption } = body;
+
+    // Find and update the media item
+    const updatedMedia = await Media.findByIdAndUpdate(
+      id,
+      { caption },
+      { new: true }
+    );
+
+    if (!updatedMedia) {
+      return NextResponse.json({ error: 'Media not found' }, { status: 404 });
+    }
+
+    return NextResponse.json(updatedMedia);
+  } catch (error) {
+    console.error('Error updating media:', error);
+    return NextResponse.json(
+      { error: 'Internal server error' },
+      { status: 500 }
+    );
+  }
+}
+
 export async function DELETE(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }

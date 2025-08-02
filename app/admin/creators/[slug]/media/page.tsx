@@ -2,6 +2,9 @@
 
 import { useState, useEffect, use } from 'react';
 import { useRouter } from 'next/navigation';
+import MediaCard from '../components/MediaCard';
+import MediaUploadForm from '../components/MediaUploadForm';
+import MediaPreviewModal from '../components/MediaPreviewModal';
 
 interface Media {
   _id: string;
@@ -39,191 +42,201 @@ export default function CreatorMedia({
   const [uploadMode, setUploadMode] = useState<'files' | 'urls'>('files');
   const [videoUrls, setVideoUrls] = useState<string[]>(['']);
   const [videoCaptions, setVideoCaptions] = useState<string[]>(['']);
+
   const [thumbnailUploading, setThumbnailUploading] = useState<Set<string>>(
     new Set()
   );
   const [thumbnailGenerating, setThumbnailGenerating] = useState<Set<string>>(
     new Set()
   );
+  const [previewMedia, setPreviewMedia] = useState<Media | null>(null);
+  const [showUploadForm, setShowUploadForm] = useState(false);
+
+  const toggleUploadForm = (mode: 'files' | 'urls') => {
+    if (showUploadForm && uploadMode === mode) {
+      setShowUploadForm(false);
+    } else {
+      setShowUploadForm(true);
+      setUploadMode(mode);
+    }
+  };
 
   useEffect(() => {
-    // Fetch creator data
-    fetch(`/api/creators/${slug}`)
-      .then((res) => res.json())
-      .then((data) => {
-        setCreator(data);
-        // After getting creator, fetch their media
-        return fetch(`/api/media/creator/${data._id}`);
-      })
-      .then((res) => res.json())
-      .then((data) => {
-        setMedia(data);
-        setIsLoading(false);
-      })
-      .catch((err) => {
-        console.error('Error fetching data:', err);
-        setError('Failed to load data');
-        setIsLoading(false);
-      });
+    fetchCreator();
+    fetchMedia();
   }, [slug]);
 
-  const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    if (!e.target.files || !creator) return;
-
-    setIsUploading(true);
-    setUploadProgress(0);
-
-    const files = Array.from(e.target.files);
-    const formData = new FormData();
-
-    files.forEach((file) => {
-      formData.append('files', file);
-    });
-    formData.append('creatorId', creator._id);
-
+  const fetchCreator = async () => {
     try {
-      const res = await fetch('/api/media/upload', {
-        method: 'POST',
-        body: formData,
-      });
-
-      if (!res.ok) {
-        throw new Error('Upload failed');
+      const response = await fetch(`/api/creators/${slug}`);
+      if (response.ok) {
+        const data = await response.json();
+        setCreator(data);
       }
-
-      const newMedia = await res.json();
-      setMedia((prev) => [...newMedia, ...prev]);
-
-      // Clear the input
-      e.target.value = '';
     } catch (err) {
-      setError('Failed to upload media. Please try again.');
-    } finally {
-      setIsUploading(false);
-      setUploadProgress(0);
+      setError('Failed to fetch creator');
     }
   };
 
-  const handleVideoUrlSubmit = async () => {
+  const fetchMedia = async () => {
+    try {
+      const response = await fetch(`/api/media/creator-slug/${slug}`);
+      if (response.ok) {
+        const data = await response.json();
+        setMedia(Array.isArray(data) ? data : []);
+      } else {
+        setMedia([]);
+      }
+    } catch (err) {
+      setMedia([]);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleFileUpload = async (e: React.FormEvent) => {
+    e.preventDefault();
     if (!creator) return;
 
-    const validUrls = videoUrls.filter((url) => url.trim() !== '');
-    if (validUrls.length === 0) {
-      setError('Please enter at least one video URL.');
-      return;
-    }
+    const form = e.target as HTMLFormElement;
+    const formData = new FormData(form);
+    formData.append('creatorId', creator._id);
 
     setIsUploading(true);
     setUploadProgress(0);
 
-    const formData = new FormData();
-    formData.append('creatorId', creator._id);
-
-    validUrls.forEach((url) => {
-      formData.append('videoUrls', url);
-    });
-
-    videoCaptions.forEach((caption) => {
-      formData.append('captions', caption);
-    });
-
     try {
-      const res = await fetch('/api/media/upload', {
+      const response = await fetch('/api/media/upload', {
         method: 'POST',
         body: formData,
       });
 
-      if (!res.ok) {
-        throw new Error('Upload failed');
+      if (response.ok) {
+        form.reset();
+        fetchMedia();
+        setError('');
+      } else {
+        const error = await response.json();
+        setError(error.error || 'Upload failed');
       }
-
-      const newMedia = await res.json();
-      setMedia((prev) => [...newMedia, ...prev]);
-
-      // Clear the inputs
-      setVideoUrls(['']);
-      setVideoCaptions(['']);
     } catch (err) {
-      setError('Failed to upload videos. Please try again.');
+      setError('Upload failed. Please try again.');
     } finally {
       setIsUploading(false);
       setUploadProgress(0);
+      setShowUploadForm(false);
     }
   };
 
-  const addVideoUrlField = () => {
-    setVideoUrls([...videoUrls, '']);
-    setVideoCaptions([...videoCaptions, '']);
-  };
+  const handleVideoUrlSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!creator) return;
 
-  const removeVideoUrlField = (index: number) => {
-    setVideoUrls(videoUrls.filter((_, i) => i !== index));
-    setVideoCaptions(videoCaptions.filter((_, i) => i !== index));
-  };
+    const formData = new FormData();
+    formData.append('creatorId', creator._id);
 
-  const updateVideoUrl = (index: number, value: string) => {
-    const newUrls = [...videoUrls];
-    newUrls[index] = value;
-    setVideoUrls(newUrls);
-  };
+    videoUrls.forEach((url, index) => {
+      if (url.trim()) {
+        formData.append('videoUrls', url.trim());
+        formData.append('captions', videoCaptions[index] || '');
+      }
+    });
 
-  const updateVideoCaption = (index: number, value: string) => {
-    const newCaptions = [...videoCaptions];
-    newCaptions[index] = value;
-    setVideoCaptions(newCaptions);
+    setIsUploading(true);
+
+    try {
+      const response = await fetch('/api/media/upload', {
+        method: 'POST',
+        body: formData,
+      });
+
+      if (response.ok) {
+        const uploadedMedia = await response.json();
+
+        // Auto-generate thumbnails for YouTube/Vimeo videos
+        if (uploadedMedia.media) {
+          for (const mediaItem of uploadedMedia.media) {
+            if (
+              mediaItem.uploadType === 'youtube' ||
+              mediaItem.uploadType === 'vimeo'
+            ) {
+              handleThumbnailGenerate(mediaItem._id);
+            }
+          }
+        }
+
+        setVideoUrls(['']);
+        setVideoCaptions(['']);
+        fetchMedia();
+        setError('');
+      } else {
+        const error = await response.json();
+        setError(error.error || 'Upload failed');
+      }
+    } catch (err) {
+      setError('Upload failed. Please try again.');
+    } finally {
+      setIsUploading(false);
+      setShowUploadForm(false);
+    }
   };
 
   const handleDelete = async (mediaId: string) => {
-    if (!confirm('Are you sure you want to delete this media?')) return;
-
     try {
-      const res = await fetch(`/api/media/${mediaId}`, {
+      const response = await fetch(`/api/media/${mediaId}`, {
         method: 'DELETE',
       });
 
-      if (!res.ok) {
-        throw new Error('Failed to delete media');
+      if (response.ok) {
+        setMedia(media.filter((item) => item._id !== mediaId));
       }
-
-      setMedia((prev) => prev.filter((item) => item._id !== mediaId));
     } catch (err) {
-      setError('Failed to delete media. Please try again.');
+      setError('Failed to delete media');
+    }
+  };
+
+  const handleEdit = async (mediaId: string, newCaption: string) => {
+    try {
+      const response = await fetch(`/api/media/${mediaId}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ caption: newCaption }),
+      });
+
+      if (response.ok) {
+        setMedia(
+          media.map((item) =>
+            item._id === mediaId ? { ...item, caption: newCaption } : item
+          )
+        );
+      }
+    } catch (err) {
+      setError('Failed to update caption');
     }
   };
 
   const handleThumbnailUpload = async (mediaId: string, file: File) => {
     setThumbnailUploading((prev) => new Set(prev).add(mediaId));
-    setError('');
 
     try {
       const formData = new FormData();
       formData.append('thumbnail', file);
 
-      const res = await fetch(`/api/media/${mediaId}/thumbnail`, {
+      const response = await fetch(`/api/media/${mediaId}/thumbnail`, {
         method: 'POST',
         body: formData,
       });
 
-      if (!res.ok) {
-        throw new Error('Failed to upload thumbnail');
+      if (response.ok) {
+        const updatedMedia = await response.json();
+        setMedia(
+          media.map((item) =>
+            item._id === mediaId ? { ...item, ...updatedMedia } : item
+          )
+        );
       }
-
-      const result = await res.json();
-
-      // Update media in state
-      setMedia((prev) =>
-        prev.map((item) =>
-          item._id === mediaId
-            ? {
-                ...item,
-                customThumbnail: result.customThumbnail,
-                hasCustomThumbnail: true,
-              }
-            : item
-        )
-      );
     } catch (err) {
-      setError('Failed to upload thumbnail. Please try again.');
+      setError('Failed to upload thumbnail');
     } finally {
       setThumbnailUploading((prev) => {
         const newSet = new Set(prev);
@@ -235,38 +248,22 @@ export default function CreatorMedia({
 
   const handleThumbnailGenerate = async (mediaId: string) => {
     setThumbnailGenerating((prev) => new Set(prev).add(mediaId));
-    setError('');
 
     try {
-      const res = await fetch(`/api/media/${mediaId}/thumbnail`, {
+      const response = await fetch(`/api/media/${mediaId}/thumbnail`, {
         method: 'PUT',
       });
 
-      if (!res.ok) {
-        const errorData = await res.json();
-        throw new Error(errorData.error || 'Failed to generate thumbnail');
+      if (response.ok) {
+        const updatedMedia = await response.json();
+        setMedia(
+          media.map((item) =>
+            item._id === mediaId ? { ...item, ...updatedMedia } : item
+          )
+        );
       }
-
-      const result = await res.json();
-
-      // Update media in state
-      setMedia((prev) =>
-        prev.map((item) =>
-          item._id === mediaId
-            ? {
-                ...item,
-                customThumbnail: result.customThumbnail,
-                hasCustomThumbnail: true,
-              }
-            : item
-        )
-      );
     } catch (err) {
-      setError(
-        err instanceof Error
-          ? err.message
-          : 'Failed to generate thumbnail. Please try again.'
-      );
+      setError('Failed to generate thumbnail');
     } finally {
       setThumbnailGenerating((prev) => {
         const newSet = new Set(prev);
@@ -277,328 +274,171 @@ export default function CreatorMedia({
   };
 
   const handleThumbnailDelete = async (mediaId: string) => {
-    if (!confirm('Are you sure you want to delete this custom thumbnail?'))
-      return;
-
-    setError('');
-
     try {
-      const res = await fetch(`/api/media/${mediaId}/thumbnail`, {
+      const response = await fetch(`/api/media/${mediaId}/thumbnail`, {
         method: 'DELETE',
       });
 
-      if (!res.ok) {
-        throw new Error('Failed to delete thumbnail');
+      if (response.ok) {
+        setMedia(
+          media.map((item) =>
+            item._id === mediaId
+              ? {
+                  ...item,
+                  customThumbnail: undefined,
+                  hasCustomThumbnail: false,
+                }
+              : item
+          )
+        );
       }
-
-      // Update media in state
-      setMedia((prev) =>
-        prev.map((item) =>
-          item._id === mediaId
-            ? {
-                ...item,
-                customThumbnail: undefined,
-                hasCustomThumbnail: false,
-              }
-            : item
-        )
-      );
     } catch (err) {
-      setError('Failed to delete thumbnail. Please try again.');
+      setError('Failed to delete thumbnail');
     }
+  };
+
+  const addVideoUrl = () => {
+    setVideoUrls([...videoUrls, '']);
+    setVideoCaptions([...videoCaptions, '']);
+  };
+
+  const removeVideoUrl = (index: number) => {
+    setVideoUrls(videoUrls.filter((_, i) => i !== index));
+    setVideoCaptions(videoCaptions.filter((_, i) => i !== index));
+  };
+
+  const getVideoThumbnailUrl = (item: Media): string => {
+    if (item.hasCustomThumbnail && item.customThumbnail) {
+      return item.customThumbnail;
+    }
+
+    if (item.uploadType === 'youtube' && item.externalId) {
+      return `https://img.youtube.com/vi/${item.externalId}/hqdefault.jpg`;
+    }
+
+    if (item.uploadType === 'vimeo' && item.externalId) {
+      return `https://vumbnail.com/${item.externalId}.jpg`;
+    }
+
+    return '/placeholder-video.svg';
   };
 
   if (isLoading) {
     return (
-      <div className='flex justify-center items-center min-h-[200px]'>
-        <div className='animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-blue-500'></div>
+      <div className='flex justify-center items-center min-h-[400px]'>
+        <div className='animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-white/20'></div>
       </div>
     );
   }
 
   if (!creator) {
-    return <div>Creator not found</div>;
+    return (
+      <div className='text-center py-12'>
+        <h1 className='text-xl text-gray-400'>Creator not found</h1>
+      </div>
+    );
   }
 
   return (
-    <div>
-      <div className='flex justify-between items-center mb-8'>
-        <h1 className='text-2xl font-bold text-gray-900'>
+    <div className='max-w-7xl mx-auto'>
+      {/* Header */}
+      <div className='flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6'>
+        <h1 className='text-2xl sm:text-3xl font-bold text-white'>
           Media - {creator.name}
         </h1>
-        <div className='flex space-x-2'>
+        <div className='flex gap-2'>
           <button
-            onClick={() => setUploadMode('files')}
-            className={`px-4 py-2 rounded-md transition-colors ${
-              uploadMode === 'files'
-                ? 'bg-blue-600 text-white'
-                : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
+            onClick={() => toggleUploadForm('files')}
+            className={`px-4 py-2 rounded-lg font-medium transition-colors ${
+              showUploadForm && uploadMode === 'files'
+                ? 'bg-white text-black'
+                : 'bg-gray-800 text-gray-300 hover:bg-gray-700'
             }`}
           >
-            Upload Files
+            Upload Media
           </button>
           <button
-            onClick={() => setUploadMode('urls')}
-            className={`px-4 py-2 rounded-md transition-colors ${
-              uploadMode === 'urls'
-                ? 'bg-blue-600 text-white'
-                : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
+            onClick={() => toggleUploadForm('urls')}
+            className={`px-4 py-2 rounded-lg font-medium transition-colors ${
+              showUploadForm && uploadMode === 'urls'
+                ? 'bg-white text-black'
+                : 'bg-gray-800 text-gray-300 hover:bg-gray-700'
             }`}
           >
-            Video URLs
+            Add External Video
           </button>
         </div>
       </div>
 
-      {/* Upload Section */}
-      <div className='bg-white shadow rounded-lg p-6 mb-6'>
-        {uploadMode === 'files' ? (
-          <div>
-            <input
-              type='file'
-              id='media-upload'
-              multiple
-              accept='image/*,video/*'
-              onChange={handleFileUpload}
-              className='hidden'
-            />
-            <label
-              htmlFor='media-upload'
-              className={`bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700 transition-colors cursor-pointer inline-block
-                ${isUploading ? 'opacity-50 cursor-not-allowed' : ''}`}
-            >
-              {isUploading ? 'Uploading...' : 'Choose Files to Upload'}
-            </label>
-            <p className='text-sm text-gray-500 mt-2'>
-              Supports images and videos. Files will be uploaded to Cloudinary.
-            </p>
-          </div>
-        ) : (
-          <div>
-            <h3 className='text-lg font-semibold mb-4'>Add Videos from URLs</h3>
-            <p className='text-sm text-gray-500 mb-4'>
-              Supports YouTube, Vimeo, and direct video URLs.
-            </p>
-            <div className='space-y-4'>
-              {videoUrls.map((url, index) => (
-                <div
-                  key={index}
-                  className='border border-gray-200 rounded-lg p-4'
-                >
-                  <div className='flex justify-between items-center mb-2'>
-                    <label className='text-sm font-medium text-gray-700'>
-                      Video URL {index + 1}
-                    </label>
-                    {videoUrls.length > 1 && (
-                      <button
-                        onClick={() => removeVideoUrlField(index)}
-                        className='text-red-600 hover:text-red-800 text-sm'
-                      >
-                        Remove
-                      </button>
-                    )}
-                  </div>
-                  <input
-                    type='url'
-                    value={url}
-                    onChange={(e) => updateVideoUrl(index, e.target.value)}
-                    placeholder='https://youtube.com/watch?v=... or https://vimeo.com/...'
-                    className='w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 mb-2'
-                  />
-                  <input
-                    type='text'
-                    value={videoCaptions[index] || ''}
-                    onChange={(e) => updateVideoCaption(index, e.target.value)}
-                    placeholder='Caption (optional)'
-                    className='w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500'
-                  />
-                </div>
-              ))}
-            </div>
-            <div className='flex justify-between items-center mt-4'>
-              <button
-                onClick={addVideoUrlField}
-                className='text-blue-600 hover:text-blue-800 text-sm'
-              >
-                + Add Another Video
-              </button>
-              <button
-                onClick={handleVideoUrlSubmit}
-                disabled={isUploading}
-                className={`bg-blue-600 text-white px-6 py-2 rounded-md hover:bg-blue-700 transition-colors
-                  ${isUploading ? 'opacity-50 cursor-not-allowed' : ''}`}
-              >
-                {isUploading ? 'Adding Videos...' : 'Add Videos'}
-              </button>
-            </div>
-          </div>
-        )}
-      </div>
-
+      {/* Error Message */}
       {error && (
-        <div className='bg-red-50 text-red-500 p-4 rounded-md mb-6'>
-          {error}
+        <div className='bg-red-500/10 border border-red-500/20 rounded-lg p-4 mb-6'>
+          <p className='text-red-400 text-center'>{error}</p>
         </div>
       )}
 
-      {isUploading && (
-        <div className='mb-6'>
-          <div className='h-2 bg-gray-200 rounded-full'>
-            <div
-              className='h-full bg-blue-600 rounded-full transition-all duration-300'
-              style={{ width: `${uploadProgress}%` }}
-            ></div>
+      {/* Upload Forms */}
+      {showUploadForm && (
+        <MediaUploadForm
+          uploadMode={uploadMode}
+          isUploading={isUploading}
+          videoUrls={videoUrls}
+          videoCaptions={videoCaptions}
+          onFileUpload={handleFileUpload}
+          onVideoUrlSubmit={handleVideoUrlSubmit}
+          onVideoUrlsChange={setVideoUrls}
+          onVideoCaptionsChange={setVideoCaptions}
+          onAddVideoUrl={addVideoUrl}
+          onRemoveVideoUrl={removeVideoUrl}
+        />
+      )}
+
+      {/* Media Grid */}
+      {media.length === 0 ? (
+        <div className='text-center py-12'>
+          <div className='w-16 h-16 mx-auto mb-4 text-gray-600'>
+            <svg fill='none' stroke='currentColor' viewBox='0 0 24 24'>
+              <path
+                strokeLinecap='round'
+                strokeLinejoin='round'
+                strokeWidth={1}
+                d='M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z'
+              />
+            </svg>
           </div>
+          <h3 className='text-lg font-medium text-gray-400 mb-2'>
+            No media found
+          </h3>
+          <p className='text-gray-500'>
+            Upload some photos or videos to get started
+          </p>
+        </div>
+      ) : (
+        <div className='grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4'>
+          {media.map((item) => (
+            <MediaCard
+              key={item._id}
+              item={item}
+              onDelete={handleDelete}
+              onEdit={handleEdit}
+              onThumbnailUpload={handleThumbnailUpload}
+              onThumbnailGenerate={handleThumbnailGenerate}
+              onThumbnailDelete={handleThumbnailDelete}
+              onPreview={setPreviewMedia}
+              thumbnailUploading={thumbnailUploading}
+              thumbnailGenerating={thumbnailGenerating}
+              getVideoThumbnailUrl={getVideoThumbnailUrl}
+            />
+          ))}
         </div>
       )}
 
-      <div className='grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6'>
-        {media.map((item) => (
-          <div
-            key={item._id}
-            className='bg-white shadow rounded-lg overflow-hidden'
-          >
-            <div className='aspect-video relative'>
-              {item.type === 'image' ? (
-                <img
-                  src={item.url}
-                  alt={item.caption || 'Media content'}
-                  className='w-full h-full object-cover'
-                />
-              ) : (
-                <>
-                  {item.uploadType === 'youtube' && item.externalId ? (
-                    <iframe
-                      src={`https://www.youtube.com/embed/${item.externalId}`}
-                      className='w-full h-full'
-                      frameBorder='0'
-                      allowFullScreen
-                      title='YouTube video'
-                    />
-                  ) : item.uploadType === 'vimeo' && item.externalId ? (
-                    <iframe
-                      src={`https://player.vimeo.com/video/${item.externalId}`}
-                      className='w-full h-full'
-                      frameBorder='0'
-                      allowFullScreen
-                      title='Vimeo video'
-                    />
-                  ) : (
-                    <video
-                      src={item.url}
-                      poster={item.thumbnail}
-                      controls
-                      className='w-full h-full object-cover'
-                    />
-                  )}
-                </>
-              )}
-              {item.uploadType && item.uploadType !== 'cloudinary' && (
-                <div className='absolute top-2 right-2'>
-                  <span className='bg-black bg-opacity-60 text-white text-xs px-2 py-1 rounded capitalize'>
-                    {item.uploadType}
-                  </span>
-                </div>
-              )}
-            </div>
-            <div className='p-4'>
-              {item.caption && (
-                <p className='text-sm text-gray-600 mb-2'>{item.caption}</p>
-              )}
-
-              {/* Thumbnail Management for Videos */}
-              {item.type === 'video' && (
-                <div className='mb-3 p-3 bg-gray-50 rounded-md'>
-                  <div className='flex items-center justify-between mb-2'>
-                    <span className='text-sm font-medium text-gray-700'>
-                      Custom Thumbnail
-                    </span>
-                    {item.hasCustomThumbnail && (
-                      <span className='text-xs text-green-600 bg-green-100 px-2 py-1 rounded'>
-                        ✓ Custom
-                      </span>
-                    )}
-                  </div>
-
-                  <div className='flex flex-wrap gap-2'>
-                    {/* Upload Custom Thumbnail */}
-                    <label className='cursor-pointer'>
-                      <input
-                        type='file'
-                        accept='image/*'
-                        className='hidden'
-                        onChange={(e) => {
-                          const file = e.target.files?.[0];
-                          if (file) {
-                            handleThumbnailUpload(item._id, file);
-                          }
-                        }}
-                        disabled={thumbnailUploading.has(item._id)}
-                      />
-                      <span
-                        className={`inline-block text-xs px-3 py-1 rounded transition-colors ${
-                          thumbnailUploading.has(item._id)
-                            ? 'bg-gray-300 text-gray-500'
-                            : 'bg-blue-600 text-white hover:bg-blue-700'
-                        }`}
-                      >
-                        {thumbnailUploading.has(item._id)
-                          ? 'Uploading...'
-                          : 'Upload'}
-                      </span>
-                    </label>
-
-                    {/* Generate Thumbnail for YouTube/Vimeo */}
-                    {(item.uploadType === 'youtube' ||
-                      item.uploadType === 'vimeo') && (
-                      <button
-                        onClick={() => handleThumbnailGenerate(item._id)}
-                        disabled={thumbnailGenerating.has(item._id)}
-                        className={`text-xs px-3 py-1 rounded transition-colors ${
-                          thumbnailGenerating.has(item._id)
-                            ? 'bg-gray-300 text-gray-500'
-                            : 'bg-green-600 text-white hover:bg-green-700'
-                        }`}
-                      >
-                        {thumbnailGenerating.has(item._id)
-                          ? 'Generating...'
-                          : 'Auto-Generate'}
-                      </button>
-                    )}
-
-                    {/* Delete Custom Thumbnail */}
-                    {item.hasCustomThumbnail && (
-                      <button
-                        onClick={() => handleThumbnailDelete(item._id)}
-                        className='text-xs px-3 py-1 bg-red-600 text-white rounded hover:bg-red-700 transition-colors'
-                      >
-                        Remove
-                      </button>
-                    )}
-                  </div>
-                </div>
-              )}
-
-              <div className='flex justify-between items-center'>
-                <span className='text-xs text-gray-500'>
-                  {new Date(item.createdAt).toLocaleDateString()}
-                </span>
-                <button
-                  onClick={() => handleDelete(item._id)}
-                  className='text-red-600 hover:text-red-800 text-sm'
-                >
-                  Delete
-                </button>
-              </div>
-            </div>
-          </div>
-        ))}
-        {media.length === 0 && (
-          <div className='col-span-full text-center text-gray-500 py-12'>
-            No media found. Upload some media to get started.
-          </div>
-        )}
-      </div>
+      {/* Preview Modal */}
+      <MediaPreviewModal
+        media={previewMedia}
+        onClose={() => setPreviewMedia(null)}
+        getVideoThumbnailUrl={getVideoThumbnailUrl}
+      />
     </div>
   );
 }

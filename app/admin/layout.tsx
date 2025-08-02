@@ -1,7 +1,7 @@
 import { Metadata } from 'next';
 import { Inter } from 'next/font/google';
-import AdminNav from './components/AdminNav';
 import AdminCheck from './components/AdminCheck';
+import AdminHeader from './components/AdminHeader';
 
 const inter = Inter({ subsets: ['latin'] });
 
@@ -16,10 +16,12 @@ export default function AdminLayout({
   children: React.ReactNode;
 }) {
   return (
-    <div className={`min-h-screen dark bg-black ${inter.className}`}>
+    <div className={`min-h-screen text-white ${inter.className}`}>
       <AdminCheck />
-      <AdminNav />
-      <main className='container mx-auto px-4 py-8'>{children}</main>
+      <AdminHeader />
+      <main className='container mx-auto px-2 sm:px-4 py-4 sm:py-6'>
+        {children}
+      </main>
     </div>
   );
 }

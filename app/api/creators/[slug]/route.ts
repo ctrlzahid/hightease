@@ -38,7 +38,15 @@ export async function PUT(
     const { slug: currentSlug } = await params;
     await connectDB();
 
-    const { name, slug, bio } = await request.json();
+    const formData = await request.formData();
+    const name = formData.get('name') as string;
+    const slug = formData.get('slug') as string;
+    const bio = formData.get('bio') as string;
+    const ageParam = formData.get('age') as string;
+    const age = ageParam ? parseInt(ageParam) : undefined;
+    const gender = formData.get('gender') as 'male' | 'female' | 'other';
+    const location = formData.get('location') as string;
+    const avatarFile = formData.get('avatar') as File | null;
 
     // Validate required fields
     if (!name || !slug) {
@@ -67,16 +75,75 @@ export async function PUT(
       }
     }
 
+    // Find existing creator to get current avatar info
+    const existingCreator = await Creator.findOne({ slug: currentSlug });
+    if (!existingCreator) {
+      return NextResponse.json({ error: 'Creator not found' }, { status: 404 });
+    }
+
+    let avatar = existingCreator.avatar || '';
+    let avatarPublicId = existingCreator.avatarPublicId || '';
+
+    // Upload new avatar if provided
+    if (avatarFile) {
+      try {
+        const { uploadImage, deleteMedia } = await import('@/lib/cloudinary');
+
+        // Delete old avatar if it exists
+        if (existingCreator.avatarPublicId) {
+          try {
+            await deleteMedia(existingCreator.avatarPublicId);
+          } catch (deleteError) {
+            console.error('Error deleting old avatar:', deleteError);
+          }
+        }
+
+        const bytes = await avatarFile.arrayBuffer();
+        const buffer = Buffer.from(bytes);
+
+        // Convert buffer to base64 string for Cloudinary
+        const base64String = `data:${avatarFile.type};base64,${buffer.toString(
+          'base64'
+        )}`;
+
+        const uploadResult = await uploadImage(base64String, {
+          folder: 'creator-content/avatars',
+          transformation: [
+            {
+              width: 400,
+              height: 400,
+              crop: 'fill',
+              gravity: 'face',
+            },
+          ],
+        });
+
+        avatar = uploadResult.url;
+        avatarPublicId = uploadResult.publicId;
+      } catch (uploadError) {
+        console.error('Error uploading avatar:', uploadError);
+        return NextResponse.json(
+          { error: 'Failed to upload avatar' },
+          { status: 500 }
+        );
+      }
+    }
+
     // Update creator
     const creator = await Creator.findOneAndUpdate(
       { slug: currentSlug },
-      { name, slug, bio },
+      {
+        name,
+        slug,
+        bio,
+        age,
+        gender,
+        location,
+        avatar,
+        avatarPublicId,
+      },
       { new: true }
     );
-
-    if (!creator) {
-      return NextResponse.json({ error: 'Creator not found' }, { status: 404 });
-    }
 
     return NextResponse.json(creator);
   } catch (error) {
