@@ -8,6 +8,9 @@ interface MediaItem {
   type: 'image' | 'video';
   url: string;
   thumbnail?: string;
+  customThumbnail?: string;
+  customThumbnailPublicId?: string;
+  hasCustomThumbnail: boolean;
   caption?: string;
   uploadType?: 'cloudinary' | 'youtube' | 'vimeo' | 'external';
   externalId?: string;
@@ -96,7 +99,6 @@ export default function MediaGallery({
             poster={getVideoThumbnailUrl(item)}
             controls
             className='w-full h-full object-cover'
-            style={{ borderRadius: '0.5rem' }}
           />
         )}
         {item.uploadType && item.uploadType !== 'cloudinary' && (
@@ -148,6 +150,33 @@ export default function MediaGallery({
                 className='w-full h-full object-cover'
                 loading='lazy'
               />
+            ) : /* Show custom thumbnail for videos if available, otherwise embed */
+            item.hasCustomThumbnail && item.customThumbnail ? (
+              <div className='relative'>
+                <img
+                  src={item.customThumbnail}
+                  alt={item.caption || 'Video thumbnail'}
+                  className='w-full h-full object-cover'
+                />
+                <div className='absolute inset-0 video-overlay flex items-center justify-center'>
+                  <div className='w-12 h-12 bg-white bg-opacity-80 rounded-full flex items-center justify-center'>
+                    <svg
+                      className='w-6 h-6 text-gray-800 ml-1'
+                      fill='currentColor'
+                      viewBox='0 0 24 24'
+                    >
+                      <path d='M8 5v14l11-7z' />
+                    </svg>
+                  </div>
+                </div>
+                {item.uploadType && item.uploadType !== 'cloudinary' && (
+                  <div className='absolute top-2 right-2'>
+                    <span className='bg-black bg-opacity-60 text-white text-xs px-2 py-1 rounded capitalize'>
+                      {item.uploadType}
+                    </span>
+                  </div>
+                )}
+              </div>
             ) : (
               renderVideoEmbed(item)
             )}

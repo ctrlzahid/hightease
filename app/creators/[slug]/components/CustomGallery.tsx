@@ -7,6 +7,9 @@ interface MediaItem {
   type: 'image' | 'video';
   url: string;
   thumbnail?: string;
+  customThumbnail?: string;
+  customThumbnailPublicId?: string;
+  hasCustomThumbnail: boolean;
   caption?: string;
   uploadType?: 'cloudinary' | 'youtube' | 'vimeo' | 'external';
   externalId?: string;
@@ -58,6 +61,12 @@ export default function CustomGallery({
   const currentItem = media[currentIndex];
 
   const getVideoThumbnailUrl = (item: MediaItem) => {
+    // Prefer custom thumbnail if available
+    if (item.hasCustomThumbnail && item.customThumbnail) {
+      console.log(item.customThumbnail, item.customThumbnailPublicId);
+      return item.customThumbnail;
+    }
+
     let thumbnailUrl = item.thumbnail;
 
     if (!thumbnailUrl && item.uploadType === 'youtube' && item.externalId) {
@@ -218,7 +227,7 @@ export default function CustomGallery({
                       }
                     }}
                   />
-                  <div className='absolute inset-0 bg-black bg-opacity-30 flex items-center justify-center'>
+                  <div className='absolute inset-0 video-overlay flex items-center justify-center'>
                     <svg
                       className='w-4 h-4 text-white'
                       fill='currentColor'

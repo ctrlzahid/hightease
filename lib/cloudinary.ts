@@ -15,13 +15,20 @@ cloudinary.config({
 });
 
 export const uploadImage = async (
-  file: string
+  file: string,
+  options?: { transformation?: Record<string, any>[]; folder?: string }
 ): Promise<{ url: string; publicId: string }> => {
   try {
-    const result = await cloudinary.uploader.upload(file, {
+    const uploadOptions: Record<string, any> = {
       resource_type: 'image',
-      folder: 'creator-content/images',
-    });
+      folder: options?.folder || 'creator-content/images',
+    };
+
+    if (options?.transformation) {
+      uploadOptions.transformation = options.transformation;
+    }
+
+    const result = await cloudinary.uploader.upload(file, uploadOptions);
 
     return {
       url: result.secure_url,

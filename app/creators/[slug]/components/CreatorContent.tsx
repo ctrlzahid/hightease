@@ -8,6 +8,9 @@ interface MediaItem {
   type: 'image' | 'video';
   url: string;
   thumbnail?: string;
+  customThumbnail?: string;
+  customThumbnailPublicId?: string;
+  hasCustomThumbnail: boolean;
   caption?: string;
   uploadType?: 'cloudinary' | 'youtube' | 'vimeo' | 'external';
   externalId?: string;
@@ -25,6 +28,7 @@ export default function CreatorContent({
   const [media, setMedia] = useState<MediaItem[]>(initialMedia);
   const [isLoading, setIsLoading] = useState(false);
   const [hasMore, setHasMore] = useState(true);
+  const [playingVideo, setPlayingVideo] = useState<MediaItem | null>(null);
 
   const lastMediaId = useRef<string | null>(null);
 
@@ -33,6 +37,28 @@ export default function CreatorContent({
     threshold: 0,
     rootMargin: '100px',
   });
+
+  // Handle ESC key to close modal
+  useEffect(() => {
+    const handleEscape = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        setPlayingVideo(null);
+      }
+    };
+
+    if (playingVideo) {
+      document.addEventListener('keydown', handleEscape);
+      // Prevent body scroll when modal is open
+      document.body.style.overflow = 'hidden';
+    } else {
+      document.body.style.overflow = 'unset';
+    }
+
+    return () => {
+      document.removeEventListener('keydown', handleEscape);
+      document.body.style.overflow = 'unset';
+    };
+  }, [playingVideo]);
 
   useEffect(() => {
     if (inView && hasMore && !isLoading) {
@@ -84,29 +110,74 @@ export default function CreatorContent({
             </div>
           ) : (
             <div className='aspect-video relative overflow-hidden rounded-lg'>
-              {item.uploadType === 'youtube' && item.externalId ? (
-                <iframe
-                  src={`https://www.youtube.com/embed/${item.externalId}`}
-                  className='w-full h-full'
-                  frameBorder='0'
-                  allowFullScreen
-                  title='YouTube video'
-                />
-              ) : item.uploadType === 'vimeo' && item.externalId ? (
-                <iframe
-                  src={`https://player.vimeo.com/video/${item.externalId}`}
-                  className='w-full h-full'
-                  frameBorder='0'
-                  allowFullScreen
-                  title='Vimeo video'
-                />
+              {/* Show thumbnail with play button if custom thumbnail exists */}
+              {item.hasCustomThumbnail && item.customThumbnail ? (
+                <div
+                  className='relative w-full h-full cursor-pointer'
+                  onClick={() => setPlayingVideo(item)}
+                >
+                  <img
+                    id={`thumbnail-${item._id}`}
+                    src={item.customThumbnail}
+                    alt={item.caption || 'Video thumbnail'}
+                    className='w-full h-full object-cover'
+                  />
+                  {/* Play button overlay */}
+                  <div className='absolute inset-0 video-overlay flex items-center justify-center'>
+                    <div className='w-16 h-16 bg-white bg-opacity-90 rounded-full flex items-center justify-center'>
+                      <svg
+                        className='w-8 h-8 text-gray-800 ml-1'
+                        fill='currentColor'
+                        viewBox='0 0 24 24'
+                      >
+                        <path d='M8 5v14l11-7z' />
+                      </svg>
+                    </div>
+                  </div>
+                </div>
               ) : (
-                <video
-                  src={item.url}
-                  poster={item.thumbnail}
-                  controls
-                  className='w-full h-full object-cover'
-                />
+                /* Show embedded video directly if no custom thumbnail */
+                <div
+                  className='relative w-full h-full cursor-pointer'
+                  onClick={() => setPlayingVideo(item)}
+                >
+                  {item.uploadType === 'youtube' && item.externalId ? (
+                    <iframe
+                      src={`https://www.youtube.com/embed/${item.externalId}`}
+                      className='w-full h-full'
+                      frameBorder='0'
+                      allowFullScreen
+                      title='YouTube video'
+                    />
+                  ) : item.uploadType === 'vimeo' && item.externalId ? (
+                    <iframe
+                      src={`https://player.vimeo.com/video/${item.externalId}`}
+                      className='w-full h-full'
+                      frameBorder='0'
+                      allowFullScreen
+                      title='Vimeo video'
+                    />
+                  ) : (
+                    <video
+                      src={item.url}
+                      poster={item.thumbnail}
+                      controls
+                      className='w-full h-full object-cover'
+                    />
+                  )}
+                  {/* Click overlay for modal */}
+                  <div className='absolute inset-0 video-overlay flex items-center justify-center'>
+                    <div className='w-16 h-16 bg-white bg-opacity-90 rounded-full flex items-center justify-center'>
+                      <svg
+                        className='w-8 h-8 text-gray-800 ml-1'
+                        fill='currentColor'
+                        viewBox='0 0 24 24'
+                      >
+                        <path d='M8 5v14l11-7z' />
+                      </svg>
+                    </div>
+                  </div>
+                </div>
               )}
               {item.uploadType && item.uploadType !== 'cloudinary' && (
                 <div className='absolute top-2 right-2'>
@@ -140,6 +211,85 @@ export default function CreatorContent({
       {media.length === 0 && (
         <div className='text-center py-4 text-gray-400'>
           No content available yet
+        </div>
+      )}
+
+      {/* Video Modal */}
+      {playingVideo && (
+        <div
+          className='fixed inset-0 flex items-center justify-center bg-black bg-opacity-80'
+          onClick={() => setPlayingVideo(null)}
+          style={{
+            backdropFilter: 'blur(4px)',
+            zIndex: 9999,
+            position: 'fixed',
+            top: 0,
+            left: 0,
+            right: 0,
+            bottom: 0,
+          }}
+        >
+          <div
+            className='relative w-[90vw] h-[90vh] max-w-6xl max-h-[80vh] bg-black rounded-lg overflow-hidden'
+            onClick={(e) => e.stopPropagation()}
+          >
+            {/* Close button */}
+            <button
+              onClick={() => setPlayingVideo(null)}
+              className='absolute top-4 right-4 z-10 w-10 h-10 bg-black bg-opacity-50 text-white rounded-full flex items-center justify-center hover:bg-opacity-70 transition-colors'
+            >
+              <svg
+                className='w-6 h-6'
+                fill='none'
+                stroke='currentColor'
+                viewBox='0 0 24 24'
+              >
+                <path
+                  strokeLinecap='round'
+                  strokeLinejoin='round'
+                  strokeWidth={2}
+                  d='M6 18L18 6M6 6l12 12'
+                />
+              </svg>
+            </button>
+
+            {/* Video content */}
+            <div className='w-full h-full'>
+              {playingVideo.uploadType === 'youtube' &&
+              playingVideo.externalId ? (
+                <iframe
+                  src={`https://www.youtube.com/embed/${playingVideo.externalId}?autoplay=1`}
+                  className='w-full h-full'
+                  frameBorder='0'
+                  allowFullScreen
+                  title='YouTube video'
+                />
+              ) : playingVideo.uploadType === 'vimeo' &&
+                playingVideo.externalId ? (
+                <iframe
+                  src={`https://player.vimeo.com/video/${playingVideo.externalId}?autoplay=1`}
+                  className='w-full h-full'
+                  frameBorder='0'
+                  allowFullScreen
+                  title='Vimeo video'
+                />
+              ) : (
+                <video
+                  src={playingVideo.url}
+                  controls
+                  autoPlay
+                  className='w-full h-full object-contain'
+                />
+              )}
+            </div>
+
+            {/* Caption */}
+            {playingVideo.caption && (
+              <div className='absolute bottom-0 left-0 right-0 bg-black bg-opacity-70 text-white p-4'>
+                <p className='text-sm'>{playingVideo.caption}</p>
+              </div>
+            )}
+          </div>
         </div>
       )}
     </div>

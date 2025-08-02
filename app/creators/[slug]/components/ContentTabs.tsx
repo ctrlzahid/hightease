@@ -8,6 +8,9 @@ interface MediaItem {
   type: 'image' | 'video';
   url: string;
   thumbnail?: string;
+  customThumbnail?: string;
+  customThumbnailPublicId?: string;
+  hasCustomThumbnail: boolean;
   caption?: string;
   uploadType?: 'cloudinary' | 'youtube' | 'vimeo' | 'external';
   externalId?: string;

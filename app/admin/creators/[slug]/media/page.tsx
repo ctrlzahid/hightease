@@ -8,6 +8,9 @@ interface Media {
   type: 'image' | 'video';
   url: string;
   thumbnail?: string;
+  customThumbnail?: string;
+  customThumbnailPublicId?: string;
+  hasCustomThumbnail: boolean;
   caption?: string;
   uploadType?: 'cloudinary' | 'youtube' | 'vimeo' | 'external';
   externalId?: string;
@@ -36,6 +39,12 @@ export default function CreatorMedia({
   const [uploadMode, setUploadMode] = useState<'files' | 'urls'>('files');
   const [videoUrls, setVideoUrls] = useState<string[]>(['']);
   const [videoCaptions, setVideoCaptions] = useState<string[]>(['']);
+  const [thumbnailUploading, setThumbnailUploading] = useState<Set<string>>(
+    new Set()
+  );
+  const [thumbnailGenerating, setThumbnailGenerating] = useState<Set<string>>(
+    new Set()
+  );
 
   useEffect(() => {
     // Fetch creator data
@@ -179,6 +188,123 @@ export default function CreatorMedia({
       setMedia((prev) => prev.filter((item) => item._id !== mediaId));
     } catch (err) {
       setError('Failed to delete media. Please try again.');
+    }
+  };
+
+  const handleThumbnailUpload = async (mediaId: string, file: File) => {
+    setThumbnailUploading((prev) => new Set(prev).add(mediaId));
+    setError('');
+
+    try {
+      const formData = new FormData();
+      formData.append('thumbnail', file);
+
+      const res = await fetch(`/api/media/${mediaId}/thumbnail`, {
+        method: 'POST',
+        body: formData,
+      });
+
+      if (!res.ok) {
+        throw new Error('Failed to upload thumbnail');
+      }
+
+      const result = await res.json();
+
+      // Update media in state
+      setMedia((prev) =>
+        prev.map((item) =>
+          item._id === mediaId
+            ? {
+                ...item,
+                customThumbnail: result.customThumbnail,
+                hasCustomThumbnail: true,
+              }
+            : item
+        )
+      );
+    } catch (err) {
+      setError('Failed to upload thumbnail. Please try again.');
+    } finally {
+      setThumbnailUploading((prev) => {
+        const newSet = new Set(prev);
+        newSet.delete(mediaId);
+        return newSet;
+      });
+    }
+  };
+
+  const handleThumbnailGenerate = async (mediaId: string) => {
+    setThumbnailGenerating((prev) => new Set(prev).add(mediaId));
+    setError('');
+
+    try {
+      const res = await fetch(`/api/media/${mediaId}/thumbnail`, {
+        method: 'PUT',
+      });
+
+      if (!res.ok) {
+        const errorData = await res.json();
+        throw new Error(errorData.error || 'Failed to generate thumbnail');
+      }
+
+      const result = await res.json();
+
+      // Update media in state
+      setMedia((prev) =>
+        prev.map((item) =>
+          item._id === mediaId
+            ? {
+                ...item,
+                customThumbnail: result.customThumbnail,
+                hasCustomThumbnail: true,
+              }
+            : item
+        )
+      );
+    } catch (err) {
+      setError(
+        err instanceof Error
+          ? err.message
+          : 'Failed to generate thumbnail. Please try again.'
+      );
+    } finally {
+      setThumbnailGenerating((prev) => {
+        const newSet = new Set(prev);
+        newSet.delete(mediaId);
+        return newSet;
+      });
+    }
+  };
+
+  const handleThumbnailDelete = async (mediaId: string) => {
+    if (!confirm('Are you sure you want to delete this custom thumbnail?'))
+      return;
+
+    setError('');
+
+    try {
+      const res = await fetch(`/api/media/${mediaId}/thumbnail`, {
+        method: 'DELETE',
+      });
+
+      if (!res.ok) {
+        throw new Error('Failed to delete thumbnail');
+      }
+
+      // Update media in state
+      setMedia((prev) =>
+        prev.map((item) =>
+          item._id === mediaId
+            ? {
+                ...item,
+                customThumbnail: undefined,
+                hasCustomThumbnail: false,
+              }
+            : item
+        )
+      );
+    } catch (err) {
+      setError('Failed to delete thumbnail. Please try again.');
     }
   };
 
@@ -379,6 +505,80 @@ export default function CreatorMedia({
               {item.caption && (
                 <p className='text-sm text-gray-600 mb-2'>{item.caption}</p>
               )}
+
+              {/* Thumbnail Management for Videos */}
+              {item.type === 'video' && (
+                <div className='mb-3 p-3 bg-gray-50 rounded-md'>
+                  <div className='flex items-center justify-between mb-2'>
+                    <span className='text-sm font-medium text-gray-700'>
+                      Custom Thumbnail
+                    </span>
+                    {item.hasCustomThumbnail && (
+                      <span className='text-xs text-green-600 bg-green-100 px-2 py-1 rounded'>
+                        ✓ Custom
+                      </span>
+                    )}
+                  </div>
+
+                  <div className='flex flex-wrap gap-2'>
+                    {/* Upload Custom Thumbnail */}
+                    <label className='cursor-pointer'>
+                      <input
+                        type='file'
+                        accept='image/*'
+                        className='hidden'
+                        onChange={(e) => {
+                          const file = e.target.files?.[0];
+                          if (file) {
+                            handleThumbnailUpload(item._id, file);
+                          }
+                        }}
+                        disabled={thumbnailUploading.has(item._id)}
+                      />
+                      <span
+                        className={`inline-block text-xs px-3 py-1 rounded transition-colors ${
+                          thumbnailUploading.has(item._id)
+                            ? 'bg-gray-300 text-gray-500'
+                            : 'bg-blue-600 text-white hover:bg-blue-700'
+                        }`}
+                      >
+                        {thumbnailUploading.has(item._id)
+                          ? 'Uploading...'
+                          : 'Upload'}
+                      </span>
+                    </label>
+
+                    {/* Generate Thumbnail for YouTube/Vimeo */}
+                    {(item.uploadType === 'youtube' ||
+                      item.uploadType === 'vimeo') && (
+                      <button
+                        onClick={() => handleThumbnailGenerate(item._id)}
+                        disabled={thumbnailGenerating.has(item._id)}
+                        className={`text-xs px-3 py-1 rounded transition-colors ${
+                          thumbnailGenerating.has(item._id)
+                            ? 'bg-gray-300 text-gray-500'
+                            : 'bg-green-600 text-white hover:bg-green-700'
+                        }`}
+                      >
+                        {thumbnailGenerating.has(item._id)
+                          ? 'Generating...'
+                          : 'Auto-Generate'}
+                      </button>
+                    )}
+
+                    {/* Delete Custom Thumbnail */}
+                    {item.hasCustomThumbnail && (
+                      <button
+                        onClick={() => handleThumbnailDelete(item._id)}
+                        className='text-xs px-3 py-1 bg-red-600 text-white rounded hover:bg-red-700 transition-colors'
+                      >
+                        Remove
+                      </button>
+                    )}
+                  </div>
+                </div>
+              )}
+
               <div className='flex justify-between items-center'>
                 <span className='text-xs text-gray-500'>
                   {new Date(item.createdAt).toLocaleDateString()}

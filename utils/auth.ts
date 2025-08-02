@@ -72,7 +72,7 @@ export const validateAccess = async (
     });
 
     // Set access cookie
-    const cookieStore = cookies();
+    const cookieStore = await cookies();
     const expiresAt =
       pwd.expiresAt || new Date(Date.now() + 24 * 60 * 60 * 1000);
 
@@ -91,15 +91,15 @@ export const validateAccess = async (
   return false;
 };
 
-export const checkAccess = (creatorId: string): boolean => {
-  const cookieStore = cookies();
+export const checkAccess = async (creatorId: string): Promise<boolean> => {
+  const cookieStore = await cookies();
   const accessCookie = cookieStore.get(ACCESS_COOKIE_NAME);
 
   return accessCookie?.value === creatorId;
 };
 
-export const revokeAccess = () => {
-  const cookieStore = cookies();
+export const revokeAccess = async () => {
+  const cookieStore = await cookies();
   cookieStore.set({
     name: ACCESS_COOKIE_NAME,
     value: '',

@@ -6,6 +6,9 @@ interface IMedia extends Document {
   url: string;
   publicId?: string;
   thumbnail?: string;
+  customThumbnail?: string; // Custom uploaded thumbnail URL
+  customThumbnailPublicId?: string; // Cloudinary public ID for custom thumbnail
+  hasCustomThumbnail: boolean; // Flag to indicate custom thumbnail exists
   caption?: string;
   uploadType: 'cloudinary' | 'youtube' | 'vimeo' | 'external';
   externalId?: string; // For YouTube video ID, Vimeo ID, etc.
@@ -34,6 +37,16 @@ const mediaSchema = new Schema<IMedia>(
     },
     thumbnail: {
       type: String,
+    },
+    customThumbnail: {
+      type: String,
+    },
+    customThumbnailPublicId: {
+      type: String,
+    },
+    hasCustomThumbnail: {
+      type: Boolean,
+      default: false,
     },
     caption: {
       type: String,
